@@ -1,0 +1,37 @@
+{
+  "name": "webpequiv",
+  "version": "1.0.0",
+  "description": "A program for generating visually similar WebP images.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test",
+    "lint": "npx eslint ./src/**/*.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/malchata/webp-equiv.git"
+  },
+  "keywords": [
+    "webp",
+    "ssimulacra",
+    "image",
+    "optimization",
+    "performance"
+  ],
+  "author": "Jeremy L. Wagner <jeremy.l.wagner@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/malchata/webp-equiv/issues"
+  },
+  "homepage": "https://github.com/malchata/webp-equiv#readme",
+  "dependencies": {
+    "cwebp-bin": "^4.0.0",
+    "dwebp-bin": "^0.1.6",
+    "imagemagick": "^0.1.3",
+    "minimist": "^1.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.6.0",
+    "rollup": "^0.66.2"
+  }
+}
