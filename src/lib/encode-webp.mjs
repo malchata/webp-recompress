@@ -4,9 +4,9 @@ import cwebp from "cwebp-bin";
 
 const execFileAsync = util.promisify(childProcess.execFile);
 
-export default async function(inputFile, outputFile, quality, nearLossless) {
+export default async function(inputFile, outputFile, quality) {
   return await execFileAsync(cwebp, [
-    nearLossless === true ? "-near_lossless" : "-q",
+    "-q",
     quality,
     "-mt",
     inputFile,
