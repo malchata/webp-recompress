@@ -5,7 +5,7 @@ import util from "util";
 import chalk from "chalk";
 
 // App modules
-import { jpegRegex, pngRegex, to } from "./lib/utils";
+import { defaults, jpegRegex, losslessRegex, to } from "./lib/utils";
 import convert from "./lib/convert";
 import identify from "./lib/identify";
 import cleanUp from "./lib/clean-up";
@@ -14,27 +14,45 @@ import trial from "./lib/trial";
 // Promisified methods
 const statAsync = util.promisify(fs.stat);
 
-export default async function(input, threshold = 0.015, window = 0.0025, start = 50, fail = false, keepWebp = true, verbose = true, quiet = false) {
+export default async function(input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, start = defaults.start, fail = defaults.fail, keepWebp = defaults.keepWebp, verbose = defaults.verbose, quiet = defaults.quiet, nearLossless = defaults.nearLossless) {
+  if (start > 100 || start < 0) {
+    if (verbose && !quiet) {
+      console.error(chalk.red.bold("Starting quality should be between 0 and 100."));
+    }
+
+    return false;
+  }
+
+  if (threshold > 1 || threshold < 0) {
+    if (verbose && !quiet) {
+      console.error(chalk.red.bold("Threshold must be between 0 and 1."));
+    }
+
+    return false;
+  }
+
+  if ((threshold + thresholdWindow) > 1 || (threshold - thresholdWindow) < 0) {
+    if (verbose && !quiet) {
+      console.error(chalk.red.bold("The specified threshold range must be between 0 and 1."));
+    }
+
+    return false;
+  }
+
   // These are used regardless of the optimization strategy
-  const min = threshold - (window / 2);
-  const max = threshold + (window / 2);
-  let state;
-  let data;
-  let inputSize;
-  let size;
-  let q;
-  let up = true;
+  const min = threshold - thresholdWindow;
+  const max = threshold + thresholdWindow;
+  let state, data, inputSize, size, quality, score;
+  let floor = 0;
+  let ceil = 100;
+  let files = {};
   let trials = {};
-  let score;
-  let smaller;
-  let files = {
-    outputWebp: path.join(process.cwd(), input.replace(jpegRegex, ".webp")),
-    webpPng: path.join(process.cwd(), input.replace(jpegRegex, "-webp.png"))
-  };
 
   // Get the size of input file (we'll need it later)
   [state, data] = await to(statAsync(input), quiet);
-  if (state === false) return false;
+  if (!state) {
+    return false;
+  }
 
   inputSize = data.size;
 
@@ -43,98 +61,119 @@ export default async function(input, threshold = 0.015, window = 0.0025, start =
     This strategy is chosen if the input is a JPEG. webp-equiv will then try to
     find a WebP that's smallest, yet within the specificied SSIMULACRA threshold.
    **/
-  if (jpegRegex.test(input) === true) {
-    files.refPng = path.join(process.cwd(), input.replace(jpegRegex, ".png"));
+  if (jpegRegex.test(input)) {
+    files["refPng"] = path.join(process.cwd(), input.replace(jpegRegex, ".png"));
+    files["outputWebp"] = path.join(process.cwd(), input.replace(jpegRegex, ".webp"));
+    files["webpPng"] = path.join(process.cwd(), input.replace(jpegRegex, "-webp.png"));
 
-    // Try to determine quality of JPEG automatically
-    [state, q] = await to(identify(input), quiet);
-    if (state === false) {
-      q = start;
+    // Try to automatically determine JPEG quality
+    [state, quality] = await to(identify(input), quiet);
 
-      if (verbose === true && quiet === false) {
-        console.log(`Couldn't guess JPEG quality. Starting at q${q}`);
+    if (!state) {
+      quality = start;
+
+      if (verbose && !quiet) {
+        console.log(`Couldn't guess JPEG quality. Starting at q${quality}`);
       }
     } else {
-      if (verbose === true && quiet === false) {
-        console.log(`Guessed JPEG quality at q${q}`);
+      quality = Number(quality);
+
+      if (verbose && !quiet) {
+        console.log(`Guessed JPEG quality at q${quality}`);
       }
     }
 
     // Create PNG reference from provided JPEG
     [state, data] = await to(convert(input, files.refPng), quiet);
-    if (state === false) return false;
 
-    let low = q / 2;
-    let high = 100 - Math.round((100 - q) / 2);
-    let mid = ((high - low) / 2) + low;
-    q = Math.round(mid);
-
-    // It's showtime
-    do {
-      if (q in trials) {
-        up === true ? q++ : q--;
-        continue;
-      }
-
-      [state, data, score, size, smaller] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, q, quiet, min, max);
-      if (state === false) return false;
-
-      trials[q] = {
-        score: score,
-        size: size,
-        smaller: smaller
-      };
-
-      if (q === 100 && (score > max || smaller === false)) {
-        break;
-      }
-
-      if (score > max) {
-        up = true;
-        low = q;
-      } else if (score < min) {
-        up = false;
-        high = q;
-      }
-
-      mid = ((high - low) / 2) + low;
-
-      q = up === true ? Math.round(high - ((high - mid) / 2)) : Math.round(low + ((mid - low) / 2));
-    } while (score > max || score < min);
-
-    if (smaller === true) {
-      console.log(chalk.bold.green("Best variant found!"));
-      cleanUp(files, keepWebp, verbose);
-    } else if (smaller === false && fail === true) {
-      console.error(chalk.red.bold("Couldn't generate a smaller WebP with the approximate equivalent equality of input."));
-      cleanUp(files, keepWebp, verbose);
-    } else if (smaller === false && fail === false) {
-      if (verbose === true && quiet === false) {
-        console.warn(chalk.yellow.bold("Couldn't generate a smaller WebP with the approximate equivalent equality of input. Finding the next smallest WebP."));
-      }
-
-      q = low;
-
-      while (smaller === false) {
-        if (q in trials) {
-          smaller = trials[q].smaller;
-
-          if (smaller === false) {
-            q--;
-            continue;
-          }
-        }
-
-        [state, data, score, size, smaller] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, q, quiet, min, max);
-        if (state === false) return false;
-
-        q--;
-      }
-
-      console.log(chalk.bold.green("Best variant found!"));
-      cleanUp(files, keepWebp, verbose);
+    if (!state) {
+      return false;
     }
-  } else if (pngRegex.test(input) === true) {
-    // TODO: Lossless strategy
+  } else if (losslessRegex.test(input)) {
+    /**
+      Strategy: Reference
+      This strategy is chosen if the input is a PNG. webp-equiv will require a
+      target value in this case to find a lossy WebP that is beneath the
+      specified SSIMULACRA threshold.
+     **/
+
+    files["refPng"] = path.join(process.cwd(), input);
+    files["outputWebp"] = path.join(process.cwd(), input.replace(losslessRegex, ".webp"));
+    files["webpPng"] = path.join(process.cwd(), input.replace(losslessRegex, "-webp.png"));
+    quality = start;
+
+    if (verbose && !quiet) {
+      console.log(`Starting at q${quality}`);
+    }
+  }
+
+  do {
+    // TODO: Check if this quality setting has already been tried.
+    // if (quality in trials) {
+    //   up ? quality++ : quality--;
+    //   continue;
+    // }
+
+    [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max, nearLossless);
+
+    if (!state) {
+      if (!quiet) {
+        console.error(chalk.red.bold("Couldn't run image trial!"));
+      }
+
+      return false;
+    }
+
+    // Record the attempt
+    trials[quality] = {
+      score: score,
+      size: size
+    };
+
+    // Image is too distorted
+    if (score > max) {
+      floor = quality;
+      quality = Math.round(floor + ((ceil - floor) / 2));
+    }
+
+    // Image is too high quality
+    if (score < min) {
+      ceil = quality;
+      quality = Math.round(floor + ((ceil - floor) / 2));
+    }
+  } while (score > max || score < min);
+
+  if (size < inputSize) {
+    console.log(chalk.bold.green(`Best variant found: q${quality}`));
+    cleanUp(files, input, keepWebp, verbose);
+  } else if (size >= inputSize && fail) {
+    console.error(chalk.red.bold("Couldn't generate a smaller WebP with the approximate equivalent equality of input."));
+    cleanUp(files, input, keepWebp, verbose);
+  } else if (size >= inputSize && !fail) {
+    if (verbose && !quiet) {
+      console.warn(chalk.yellow.bold("Couldn't generate a smaller WebP with the approximate equivalent equality of input. Finding the next smallest WebP."));
+    }
+
+    // Should we go for broke?
+    while (size >= inputSize) {
+      // We should check to see if we've done an encoding at this quality level.
+      if (quality in trials) {
+        if (trials[quality].size >= inputSize) {
+          quality--;
+          continue;
+        }
+      }
+
+      [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max, nearLossless);
+
+      if (!state) {
+        return false;
+      }
+
+      quality--;
+    }
+
+    console.log(chalk.bold.green(`Best variant found: q${quality}`));
+    cleanUp(files, input, keepWebp, verbose);
   }
 }

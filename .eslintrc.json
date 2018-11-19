@@ -9,6 +9,7 @@
         "sourceType": "module"
     },
     "rules": {
+        "curly": "error",
         "no-console": "off",
         "indent": [
             "error",
