@@ -43,7 +43,7 @@ Arguments:
             Default: false
   -q ...... Silence all console output, including errors (overrides -v).
             Default: false
-  -n ...... Activates the WebP encoder's "near lossless" mode. Warning: This
-            mode can run significantly slower, and may not always be successful.
+  -c ...... Activates the file cache. When enabled, webp-equiv will keep track
+            of the best settings for given files. Useful for repeat builds.
             Default: false
 `;

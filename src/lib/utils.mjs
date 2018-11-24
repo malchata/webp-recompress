@@ -8,7 +8,8 @@ export const defaults = {
   keepWebp: false,
   verbose: false,
   quiet: false,
-  nearLossless: false
+  cache: false,
+  cacheFile: "webpcache.json"
 };
 export const jpegRegex = /\.jpe?g$/i;
 export const losslessRegex = /\.(png|gif)$/i;

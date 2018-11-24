@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import util from "util";
 import chalk from "chalk";
+import hasha from "hasha";
 
 // App modules
 import { defaults, jpegRegex, losslessRegex, to } from "./lib/utils";
@@ -13,8 +14,10 @@ import trial from "./lib/trial";
 
 // Promisified methods
 const statAsync = util.promisify(fs.stat);
+const readFileAsync = util.promisify(fs.readFile);
+const writeFileAsync = util.promisify(fs.writeFile);
 
-export default async function(input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, start = defaults.start, fail = defaults.fail, keepWebp = defaults.keepWebp, verbose = defaults.verbose, quiet = defaults.quiet, nearLossless = defaults.nearLossless) {
+export default async function(input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, start = defaults.start, fail = defaults.fail, keepWebp = defaults.keepWebp, verbose = defaults.verbose, quiet = defaults.quiet, cache = defaults.cache, cacheFile = defaults.cacheFile) {
   if (start > 100 || start < 0) {
     if (verbose && !quiet) {
       console.error(chalk.red.bold("Starting quality should be between 0 and 100."));
@@ -42,13 +45,26 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
   // These are used regardless of the optimization strategy
   const min = threshold - thresholdWindow;
   const max = threshold + thresholdWindow;
-  let state, data, inputSize, size, quality, score;
+  let state, data, inputSize, size, quality, score, cacheEntries, inputHash;
   let floor = 0;
   let ceil = 100;
   let files = {};
   let trials = {};
 
-  // Get the size of input file (we'll need it later)
+  if (cache) {
+    try {
+      [state, data] = await to(readFileAsync(path.resolve(cacheFile)), quiet);
+      cacheEntries = JSON.parse(data.toString());
+    } catch (err) {
+      cacheEntries = {};
+
+      if (verbose && !quiet) {
+        console.warn(chalk.bold.yellow("Cache not found. Creating from scratch..."));
+      }
+    }
+  }
+
+  // Get the size of input file (we"ll need it later)
   [state, data] = await to(statAsync(input), quiet);
   if (!state) {
     return false;
@@ -59,7 +75,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
   /**
     Strategy: Recompress
     This strategy is chosen if the input is a JPEG. webp-equiv will then try to
-    find a WebP that's smallest, yet within the specificied SSIMULACRA threshold.
+    find a WebP that"s smallest, yet within the specificied SSIMULACRA threshold.
    **/
   if (jpegRegex.test(input)) {
     files["refPng"] = path.join(process.cwd(), input.replace(jpegRegex, ".png"));
@@ -73,7 +89,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
       quality = start;
 
       if (verbose && !quiet) {
-        console.log(`Couldn't guess JPEG quality. Starting at q${quality}`);
+        console.log(`Couldn"t guess JPEG quality. Starting at q${quality}`);
       }
     } else {
       quality = Number(quality);
@@ -107,14 +123,55 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
     }
   }
 
-  do {
-    // TODO: Check if this quality setting has already been tried.
-    // if (quality in trials) {
-    //   up ? quality++ : quality--;
-    //   continue;
-    // }
+  // Check if this image already has a cache entry
+  if (cache) {
+    inputHash = await hasha.fromFile(input, {
+      algorithm: "sha256"
+    });
 
-    [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max, nearLossless);
+    if (inputHash in cacheEntries) {
+      let cacheEntry = cacheEntries[inputHash];
+
+      if (typeof cacheEntry[`${threshold}|${thresholdWindow}`] === "number") {
+        if (verbose && !quiet) {
+          console.log(chalk.green.bold("Cache hit!"));
+        }
+
+        quality = cacheEntry[`${threshold}|${thresholdWindow}`];
+
+        [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max);
+
+        if (!state) {
+          if (!quiet) {
+            console.error(chalk.red.bold("Couldn't run image trial!"));
+          }
+
+          return false;
+        }
+
+        console.log(chalk.bold.green(`Best variant found: q${quality}`));
+        cleanUp(files, input, keepWebp, verbose);
+      } else {
+        if (verbose && !quiet) {
+          console.warn(chalk.green.yellow("Cache miss!"));
+        }
+      }
+    }
+  }
+
+  do {
+    // Check if this quality setting has already been tried.
+    if (quality in trials) {
+      if (score > max) {
+        quality++;
+      } else if (score < min) {
+        quality--;
+      }
+
+      continue;
+    }
+
+    [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max);
 
     if (!state) {
       if (!quiet) {
@@ -144,6 +201,16 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
   } while (score > max || score < min);
 
   if (size < inputSize) {
+    if (cache) {
+      cacheEntries[inputHash] = {};
+      cacheEntries[inputHash][`${threshold}|${thresholdWindow}`] = quality;
+      [state, data] = await to(writeFileAsync(path.resolve(__dirname, cacheFile), JSON.stringify(cacheEntries)), quiet);
+
+      if (state) {
+        console.dir(data);
+      }
+    }
+
     console.log(chalk.bold.green(`Best variant found: q${quality}`));
     cleanUp(files, input, keepWebp, verbose);
   } else if (size >= inputSize && fail) {
@@ -164,7 +231,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
         }
       }
 
-      [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max, nearLossless);
+      [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max);
 
       if (!state) {
         return false;

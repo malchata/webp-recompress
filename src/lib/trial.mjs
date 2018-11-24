@@ -8,11 +8,11 @@ import logResult from "./log-result";
 
 const statAsync = util.promisify(fs.stat);
 
-export default async function(input, inputSize, outputWebp, refPng, webpPng, quality, quiet, min, max, nearLossless) {
+export default async function(input, inputSize, outputWebp, refPng, webpPng, quality, quiet, min, max) {
   let state, data;
 
   // Encode WebP for this run
-  [state, data] = await to(encodeWebp(input, outputWebp, quality, nearLossless), quiet);
+  [state, data] = await to(encodeWebp(input, outputWebp, quality), quiet);
 
   if (!state) {
     return false;

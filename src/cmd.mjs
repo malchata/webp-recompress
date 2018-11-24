@@ -16,7 +16,7 @@ if (typeof argv.i === "undefined") {
   let keepWebp = argv.k || defaults.keepWebp;
   let verbose = argv.v || defaults.verbose;
   let quiet = argv.q || defaults.quiet;
-  let nearLossless = argv.n || defaults.nearLossless;
+  let cache = argv.c || defaults.cache;
 
-  webpEquiv(input, threshold, thresholdWindow, start, fail, keepWebp, verbose, quiet, nearLossless);
+  webpEquiv(input, threshold, thresholdWindow, start, fail, keepWebp, verbose, quiet, cache);
 }
