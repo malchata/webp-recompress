@@ -1,7 +1,7 @@
 import minimist from "minimist";
 import { defaults } from "./lib/utils";
 import helpText from "./lib/help-text";
-import webpEquiv from "./webp-equiv";
+import webpRecompress from "./webp-recompress";
 
 const argv = minimist(process.argv.slice(2));
 
@@ -18,5 +18,5 @@ if (typeof argv.i === "undefined") {
   let quiet = argv.q || defaults.quiet;
   let cache = argv.c || defaults.cache;
 
-  webpEquiv(input, threshold, thresholdWindow, start, fail, keepWebp, verbose, quiet, cache);
+  webpRecompress(input, threshold, thresholdWindow, start, fail, keepWebp, verbose, quiet, cache);
 }
