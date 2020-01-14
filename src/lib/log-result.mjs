@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-export default function(q, score, size, inputSize, min, max) {
+export default function (q, score, size, inputSize, min, max) {
   let smaller = size < inputSize;
   let improvement = Math.abs(((size / inputSize) - 1) * 100).toFixed(2);
   let withinThreshold = score <= max && score >= min;

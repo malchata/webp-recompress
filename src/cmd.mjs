@@ -17,6 +17,7 @@ if (typeof argv.i === "undefined") {
   let verbose = argv.v || defaults.verbose;
   let quiet = argv.q || defaults.quiet;
   let cache = argv.c || defaults.cache;
+  let cacheFilename = argv.cf || defaults.cacheFilename;
 
-  webpRecompress(input, threshold, thresholdWindow, start, fail, keepWebp, verbose, quiet, cache);
+  webpRecompress(input, threshold, thresholdWindow, start, fail, keepWebp, verbose, quiet, cache, cacheFilename);
 }

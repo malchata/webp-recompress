@@ -8,19 +8,6 @@ import decodeWebp from "../src/lib/decode-webp";
 import ssimulacra from "../src/lib/ssimulacra";
 
 describe("WebP", function() {
-  describe("Encode PNG", function() {
-    it("should encode a PNG to a WebP", async function() {
-      let state;
-      const input = path.resolve(__dirname, "images", "test-png.png");
-      const outputWebp = path.resolve(__dirname, "images", "test-png.webp");
-      const quality = 75;
-
-      [state] = await to(encodeWebp(input, outputWebp, quality));
-
-      assert.strictEqual(state, true);
-    });
-  });
-
   describe("Encode JPEG", function() {
     it("should encode a JPEG to a WebP", async function() {
       let state;
@@ -72,7 +59,7 @@ describe("SSIMULACRA", async function() {
         score = parseFloat(data.stdout);
       }
 
-      assert.strictEqual(score >= 0 && score <= 1, true);
+      assert.strictEqual(score >= 0.0 && score <= 1.0, true);
     });
   });
 });

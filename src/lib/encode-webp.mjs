@@ -4,7 +4,7 @@ import cwebp from "cwebp-bin";
 
 const execFileAsync = util.promisify(childProcess.execFile);
 
-export default async function(inputFile, outputFile, quality) {
+export default async function (inputFile, outputFile, quality) {
   return await execFileAsync(cwebp, [
     "-q",
     quality,

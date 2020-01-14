@@ -1,7 +1,7 @@
 import fs from "fs";
 import { webpRegex } from "./utils";
 
-export default function(files, input, keepWebp, verbose) {
+export default function (files, input, keepWebp, verbose) {
   if (verbose) {
     console.log("Cleaning up temp files...");
   }

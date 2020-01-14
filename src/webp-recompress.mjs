@@ -6,7 +6,7 @@ import chalk from "chalk";
 import hasha from "hasha";
 
 // App modules
-import { defaults, jpegRegex, losslessRegex, to } from "./lib/utils";
+import { defaults, jpegRegex, to } from "./lib/utils";
 import convert from "./lib/convert";
 import identify from "./lib/identify";
 import cleanUp from "./lib/clean-up";
@@ -17,7 +17,7 @@ const statAsync = util.promisify(fs.stat);
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
-export default async function(input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, start = defaults.start, fail = defaults.fail, keepWebp = defaults.keepWebp, verbose = defaults.verbose, quiet = defaults.quiet, cache = defaults.cache, cacheFile = defaults.cacheFile) {
+export default async function (input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, start = defaults.start, fail = defaults.fail, keepWebp = defaults.keepWebp, verbose = defaults.verbose, quiet = defaults.quiet, cache = defaults.cache, cacheFilename = defaults.cacheFilename) {
   if (start > 100 || start < 0) {
     if (verbose && !quiet) {
       console.error(chalk.red.bold("Starting quality should be between 0 and 100."));
@@ -45,6 +45,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
   // These are used regardless of the optimization strategy
   const min = threshold - thresholdWindow;
   const max = threshold + thresholdWindow;
+  const cacheFilePath = path.resolve(__dirname, cacheFilename);
   let state, data, inputSize, size, quality, score, cacheEntries, inputHash;
   let floor = 0;
   let ceil = 100;
@@ -53,7 +54,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
 
   if (cache) {
     try {
-      [state, data] = await to(readFileAsync(path.resolve(cacheFile)), quiet);
+      [state, data] = await to(readFileAsync(cacheFilePath), quiet);
       cacheEntries = JSON.parse(data.toString());
     } catch (err) {
       cacheEntries = {};
@@ -72,17 +73,12 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
 
   inputSize = data.size;
 
-  /**
-    Strategy: Recompress
-    This strategy is chosen if the input is a JPEG. webp-equiv will then try to
-    find a WebP that"s smallest, yet within the specificied SSIMULACRA threshold.
-   **/
   if (jpegRegex.test(input)) {
     files["refPng"] = path.join(process.cwd(), input.replace(jpegRegex, ".png"));
     files["outputWebp"] = path.join(process.cwd(), input.replace(jpegRegex, ".webp"));
     files["webpPng"] = path.join(process.cwd(), input.replace(jpegRegex, "-webp.png"));
 
-    // Try to automatically determine JPEG quality
+    // Try to determine JPEG quality
     [state, quality] = await to(identify(input), quiet);
 
     if (!state) {
@@ -104,22 +100,6 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
 
     if (!state) {
       return false;
-    }
-  } else if (losslessRegex.test(input)) {
-    /**
-      Strategy: Reference
-      This strategy is chosen if the input is a PNG. webp-equiv will require a
-      target value in this case to find a lossy WebP that is beneath the
-      specified SSIMULACRA threshold.
-     **/
-
-    files["refPng"] = path.join(process.cwd(), input);
-    files["outputWebp"] = path.join(process.cwd(), input.replace(losslessRegex, ".webp"));
-    files["webpPng"] = path.join(process.cwd(), input.replace(losslessRegex, "-webp.png"));
-    quality = start;
-
-    if (verbose && !quiet) {
-      console.log(`Starting at q${quality}`);
     }
   }
 
@@ -204,11 +184,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
     if (cache) {
       cacheEntries[inputHash] = {};
       cacheEntries[inputHash][`${threshold}|${thresholdWindow}`] = quality;
-      [state, data] = await to(writeFileAsync(path.resolve(__dirname, cacheFile), JSON.stringify(cacheEntries)), quiet);
-
-      if (state) {
-        console.dir(data);
-      }
+      [state] = await to(writeFileAsync(cacheFilePath, JSON.stringify(cacheEntries)), quiet);
     }
 
     console.log(chalk.bold.green(`Best variant found: q${quality}`));
