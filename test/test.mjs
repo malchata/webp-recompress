@@ -1,4 +1,4 @@
-/*global describe it*/
+/* global describe it */
 
 import path from "path";
 import assert from "assert";

@@ -1,13 +1,21 @@
 import pkg from "./package.json";
+import babel from "rollup-plugin-babel";
 import resolve from "@rollup/plugin-node-resolve";
 
 const plugins = [
+  babel(),
   resolve({
     preferBuiltins: true
   })
 ];
 
-const external = [...Object.keys(pkg.dependencies)];
+const external = [
+  ...Object.keys(pkg.dependencies),
+  "path",
+  "fs",
+  "util",
+  "child_process"
+];
 
 export default [
   {

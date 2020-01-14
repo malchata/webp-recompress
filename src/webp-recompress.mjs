@@ -64,7 +64,7 @@ export default async function(input, threshold = defaults.threshold, thresholdWi
     }
   }
 
-  // Get the size of input file (we"ll need it later)
+  // Get the size of input file (we'll need it later)
   [state, data] = await to(statAsync(input), quiet);
   if (!state) {
     return false;

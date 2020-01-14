@@ -7,8 +7,8 @@ WebP candidate that a) is smaller and b) looks as visually identical to its
 source as possible.
 
 Arguments:
-  -i ...... Input image file. Must be either be a JPEG, PNG, or GIF file. Passing
-            a WebP file will throw an error. This value is required!
+  -i ...... Input image file. Must be either be a JPEG, PNG, or GIF file.
+            Passing a WebP file will throw an error. This value is required!
   -t N .... Minimum SSIMULACRA threshold for the WebP file to meet. Lower values
             mean resulting WebPs will resemble their inputs more, but will also
             be larger. SSIMULACRA states that values above 0.1 means distortions
