@@ -1,10 +1,10 @@
 import fs from "fs";
 import util from "util";
-import { to } from "./utils";
-import encodeWebp from "./encode-webp";
-import decodeWebp from "./decode-webp";
-import ssimulacra from "./ssimulacra";
-import logResult from "./log-result";
+import { to } from "./utils.mjs";
+import encodeWebp from "./encode-webp.mjs";
+import decodeWebp from "./decode-webp.mjs";
+import ssimulacra from "./ssimulacra.mjs";
+import logResult from "./log-result.mjs";
 
 const statAsync = util.promisify(fs.stat);
 
@@ -26,7 +26,7 @@ export default async function (input, inputSize, outputWebp, refPng, webpPng, qu
   }
 
   // Get the SSIMULACRA score for this iteration
-  [state, data] = await to(ssimulacra(input, webpPng));
+  [state, data] = await to(ssimulacra(input, webpPng), quiet);
 
   if (!state) {
     return false;

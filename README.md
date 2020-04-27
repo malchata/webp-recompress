@@ -1,8 +1,6 @@
 # webp-recompress
 
-A (totally not production-ready) Node.js program that takes an input JPEG and uses [SSIMULACRA](https://github.com/cloudinary/ssimulacra) to generate a lossy WebP within a specified quality range.
-
-In order to run this, you'll need SSIMULACRA available on your system. I'd like to get an npm-installable version of this, but currently lack the know-how to do so.
+A (totally not production-ready) Node.js program that takes an input JPEG and uses [SSIMULACRA](https://github.com/cloudinary/ssimulacra) to generate a lossy WebP within a specified quality range. It works on macOS Catalina currently, but probably won't work on other platforms until I can get some stuff figured out.
 
 If you have SSIMULACRA available locally, try installing `webp-recompress` globally:
 

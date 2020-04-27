@@ -1,8 +1,8 @@
 import fs from "fs";
-import { webpRegex } from "./utils";
+import { webpRegex } from "./utils.mjs";
 
-export default function (files, input, keepWebp, verbose) {
-  if (verbose) {
+export default function (files, input, keepWebp, quiet) {
+  if (!quiet) {
     console.log("Cleaning up temp files...");
   }
 
@@ -14,7 +14,7 @@ export default function (files, input, keepWebp, verbose) {
     fs.unlinkSync(files[file]);
   }
 
-  if (verbose) {
+  if (!quiet) {
     console.log("Cleanup complete.");
   }
 }

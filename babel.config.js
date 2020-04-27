@@ -6,14 +6,20 @@ module.exports = {
       }
     ]
   ],
+  plugins: [
+    "@babel/plugin-syntax-import-meta"
+  ],
   env: {
     test: {
       presets: [
         [
           "@babel/preset-env", {
-            modules: "commonjs"
+            modules: false
           }
         ]
+      ],
+      plugins: [
+        "@babel/plugin-syntax-import-meta"
       ]
     }
   }

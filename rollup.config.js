@@ -14,7 +14,8 @@ const external = [
   "path",
   "fs",
   "util",
-  "child_process"
+  "child_process",
+  "url"
 ];
 
 export default [
@@ -32,6 +33,15 @@ export default [
     output: {
       file: pkg.main,
       format: "cjs"
+    },
+    plugins,
+    external
+  },
+  {
+    input: "./src/webp-recompress.mjs",
+    output: {
+      file: pkg.module,
+      format: "esm"
     },
     plugins,
     external

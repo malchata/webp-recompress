@@ -2,64 +2,22 @@
 
 import path from "path";
 import assert from "assert";
-import { to } from "../src/lib/utils";
-import encodeWebp from "../src/lib/encode-webp";
-import decodeWebp from "../src/lib/decode-webp";
-import ssimulacra from "../src/lib/ssimulacra";
+import { fileURLToPath } from "url";
+import { defaults } from "../src/lib/utils.mjs";
+import webpRecompress from "../src/webp-recompress.mjs";
 
-describe("WebP", function() {
-  describe("Encode JPEG", function() {
-    it("should encode a JPEG to a WebP", async function() {
-      let state;
-      const input = path.resolve(__dirname, "images", "test-jpeg.jpg");
-      const outputWebp = path.resolve(__dirname, "images", "test-jpeg.webp");
-      const quality = 75;
+const __dirname = fileURLToPath(import.meta.url.replace("/test.mjs", ""));
 
-      [state] = await to(encodeWebp(input, outputWebp, quality));
+describe("webp-recompress", function () {
+  this.timeout(20000);
 
-      assert.strictEqual(state, true);
-    });
-  });
+  it("should find the best lossy WebP from a JPEG", async function () {
+    const input = path.resolve(__dirname, "fixtures", "test-jpeg.jpg");
 
-  describe("Decode to PNG", function() {
-    it("should decode a WebP to a PNG", async function() {
-      let state;
-      const input = path.resolve(__dirname, "images", "test-webp.webp");
-      const outputPng = path.resolve(__dirname, "images", "test-webp.png");
-
-      [state] = await to(decodeWebp(input, outputPng));
-
-      assert.strictEqual(state, true);
-    });
-  });
-});
-
-describe("SSIMULACRA", async function() {
-  describe("Get score", function() {
-    it("should successfully run SSIMULACRA", async function() {
-      let state;
-      const refPng = path.resolve(__dirname, "images", "ssimulacra-in.png");
-      const webpPng = path.resolve(__dirname, "images", "ssimulacra-out.png");
-
-      [state] = await to(ssimulacra(refPng, webpPng));
-
-      assert.strictEqual(state, true);
-    });
-  });
-
-  describe("Score in range", function() {
-    it("should return a proper SSIMULACRA score", async function() {
-      let state, data, score;
-      const refPng = path.resolve(__dirname, "images", "ssimulacra-in.png");
-      const webpPng = path.resolve(__dirname, "images", "ssimulacra-out.png");
-
-      [state, data] = await to(ssimulacra(refPng, webpPng));
-
-      if (state) {
-        score = parseFloat(data.stdout);
-      }
-
-      assert.strictEqual(score >= 0.0 && score <= 1.0, true);
+    return webpRecompress(input, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, defaults.keepWebp, true).then(works => {
+      assert.strictEqual(works, true);
+    }).catch(error => {
+      assert.fail(error);
     });
   });
 });

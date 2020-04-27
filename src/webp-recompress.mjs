@@ -1,65 +1,65 @@
 // Global modules
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import util from "util";
 import chalk from "chalk";
 import hasha from "hasha";
 
 // App modules
-import { defaults, jpegRegex, to } from "./lib/utils";
-import convert from "./lib/convert";
-import identify from "./lib/identify";
-import cleanUp from "./lib/clean-up";
-import trial from "./lib/trial";
+import { defaults, jpegRegex, to, buildCacheSignature } from "./lib/utils.mjs";
+import convert from "./lib/convert.mjs";
+import cleanUp from "./lib/clean-up.mjs";
+import trial from "./lib/trial.mjs";
 
 // Promisified methods
 const statAsync = util.promisify(fs.stat);
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
+const dirname = typeof __dirname === "undefined" ? fileURLToPath(import.meta.url.replace("/test.mjs", "")) : __dirname;
 
-export default async function (input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, start = defaults.start, fail = defaults.fail, keepWebp = defaults.keepWebp, verbose = defaults.verbose, quiet = defaults.quiet, cache = defaults.cache, cacheFilename = defaults.cacheFilename) {
+async function webpRecompress (input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, thresholdMultiplier = defaults.thresholdMultiplier, start = defaults.start, keepWebp = defaults.keepWebp, quiet = defaults.quiet, cache = defaults.cache, cacheFilename = defaults.cacheFilename) {
+  // Ensure the quality is within a reasonable range
   if (start > 100 || start < 0) {
-    if (verbose && !quiet) {
+    if (!quiet) {
       console.error(chalk.red.bold("Starting quality should be between 0 and 100."));
     }
 
     return false;
   }
 
+  // Make sure the SSIMULACRA threshold is OK
   if (threshold > 1 || threshold < 0) {
-    if (verbose && !quiet) {
+    if (!quiet) {
       console.error(chalk.red.bold("Threshold must be between 0 and 1."));
     }
 
     return false;
   }
 
-  if ((threshold + thresholdWindow) > 1 || (threshold - thresholdWindow) < 0) {
-    if (verbose && !quiet) {
-      console.error(chalk.red.bold("The specified threshold range must be between 0 and 1."));
-    }
+  // Initialize the threshold window, but clamp it to an acceptable range
+  const min = (threshold - thresholdWindow) < 0 ? 0 : (threshold - thresholdWindow);
+  const max = (threshold + thresholdWindow) > 1 ? 1 : (threshold + thresholdWindow);
 
-    return false;
-  }
-
-  // These are used regardless of the optimization strategy
-  const min = threshold - thresholdWindow;
-  const max = threshold + thresholdWindow;
-  const cacheFilePath = path.resolve(__dirname, cacheFilename);
-  let state, data, inputSize, size, quality, score, cacheEntries, inputHash;
+  const cacheFilePath = path.resolve(dirname, cacheFilename);
+  let state, data, inputSize, size, score, cacheEntries, inputHash;
+  let quality = Number(start);
   let floor = 0;
   let ceil = 100;
   let files = {};
   let trials = {};
 
+  // Check if we're using the cache
   if (cache) {
     try {
+      // First try to read from the cache if it's available...
       [state, data] = await to(readFileAsync(cacheFilePath), quiet);
       cacheEntries = JSON.parse(data.toString());
     } catch (err) {
+      // No cache? Create an empty object for now.
       cacheEntries = {};
 
-      if (verbose && !quiet) {
+      if (!quiet) {
         console.warn(chalk.bold.yellow("Cache not found. Creating from scratch..."));
       }
     }
@@ -74,30 +74,14 @@ export default async function (input, threshold = defaults.threshold, thresholdW
   inputSize = data.size;
 
   if (jpegRegex.test(input)) {
-    files["refPng"] = path.join(process.cwd(), input.replace(jpegRegex, ".png"));
-    files["outputWebp"] = path.join(process.cwd(), input.replace(jpegRegex, ".webp"));
-    files["webpPng"] = path.join(process.cwd(), input.replace(jpegRegex, "-webp.png"));
-
-    // Try to determine JPEG quality
-    [state, quality] = await to(identify(input), quiet);
-
-    if (!state) {
-      quality = start;
-
-      if (verbose && !quiet) {
-        console.log(`Couldn"t guess JPEG quality. Starting at q${quality}`);
-      }
-    } else {
-      quality = Number(quality);
-
-      if (verbose && !quiet) {
-        console.log(`Guessed JPEG quality at q${quality}`);
-      }
-    }
+    files["refPng"] = path.resolve(process.cwd(), input.replace(jpegRegex, ".png"));
+    files["outputWebp"] = path.resolve(process.cwd(), input.replace(jpegRegex, ".webp"));
+    files["webpPng"] = path.resolve(process.cwd(), input.replace(jpegRegex, "-webp.png"));
 
     // Create PNG reference from provided JPEG
     [state, data] = await to(convert(input, files.refPng), quiet);
 
+    // Couldn't create a PNG reference from the given JPEG, so that's a bust :(
     if (!state) {
       return false;
     }
@@ -112,12 +96,12 @@ export default async function (input, threshold = defaults.threshold, thresholdW
     if (inputHash in cacheEntries) {
       let cacheEntry = cacheEntries[inputHash];
 
-      if (typeof cacheEntry[`${threshold}|${thresholdWindow}`] === "number") {
-        if (verbose && !quiet) {
+      if (typeof cacheEntry[buildCacheSignature(threshold, thresholdWindow)] === "number") {
+        if (!quiet) {
           console.log(chalk.green.bold("Cache hit!"));
         }
 
-        quality = cacheEntry[`${threshold}|${thresholdWindow}`];
+        quality = cacheEntry[buildCacheSignature(threshold, thresholdWindow)];
 
         [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max);
 
@@ -130,9 +114,9 @@ export default async function (input, threshold = defaults.threshold, thresholdW
         }
 
         console.log(chalk.bold.green(`Best variant found: q${quality}`));
-        cleanUp(files, input, keepWebp, verbose);
+        cleanUp(files, input, keepWebp, quiet);
       } else {
-        if (verbose && !quiet) {
+        if (!quiet) {
           console.warn(chalk.green.yellow("Cache miss!"));
         }
       }
@@ -163,60 +147,51 @@ export default async function (input, threshold = defaults.threshold, thresholdW
 
     // Record the attempt
     trials[quality] = {
-      score: score,
-      size: size
+      score,
+      size
     };
 
     // Image is too distorted
     if (score > max) {
       floor = quality;
-      quality = Math.round(floor + ((ceil - floor) / 2));
     }
 
     // Image is too high quality
     if (score < min) {
       ceil = quality;
-      quality = Math.round(floor + ((ceil - floor) / 2));
     }
+
+    quality = Math.round(floor + ((ceil - floor) / 2));
   } while (score > max || score < min);
 
   if (size < inputSize) {
+    // If we're using the cache, let's write this result to it
     if (cache) {
       cacheEntries[inputHash] = {};
-      cacheEntries[inputHash][`${threshold}|${thresholdWindow}`] = quality;
+      cacheEntries[inputHash][buildCacheSignature(threshold, thresholdWindow)] = quality;
+
       [state] = await to(writeFileAsync(cacheFilePath, JSON.stringify(cacheEntries)), quiet);
-    }
-
-    console.log(chalk.bold.green(`Best variant found: q${quality}`));
-    cleanUp(files, input, keepWebp, verbose);
-  } else if (size >= inputSize && fail) {
-    console.error(chalk.red.bold("Couldn't generate a smaller WebP with the approximate equivalent equality of input."));
-    cleanUp(files, input, keepWebp, verbose);
-  } else if (size >= inputSize && !fail) {
-    if (verbose && !quiet) {
-      console.warn(chalk.yellow.bold("Couldn't generate a smaller WebP with the approximate equivalent equality of input. Finding the next smallest WebP."));
-    }
-
-    // Should we go for broke?
-    while (size >= inputSize) {
-      // We should check to see if we've done an encoding at this quality level.
-      if (quality in trials) {
-        if (trials[quality].size >= inputSize) {
-          quality--;
-          continue;
-        }
-      }
-
-      [state, data, score, size] = await trial(input, inputSize, files.outputWebp, files.refPng, files.webpPng, quality, quiet, min, max);
 
       if (!state) {
-        return false;
+        console.warn(chalk.yellow.bold(`Couldn't write cache to ${cacheFilePath}`));
       }
-
-      quality--;
     }
 
-    console.log(chalk.bold.green(`Best variant found: q${quality}`));
-    cleanUp(files, input, keepWebp, verbose);
+    if (!quiet) {
+      console.log(chalk.bold.green(`Best variant found: q${quality}`));
+    }
+
+    cleanUp(files, input, keepWebp, quiet);
+
+    return true;
+  } else if (size >= inputSize) {
+    if (!quiet) {
+      console.warn(chalk.yellow.bold("Couldn't generate a smaller WebP with an approximate quality of the input JPEG. Expanding the threshold window and trying again..."));
+    }
+
+    // Try again, but adjust the scoring window
+    return await webpRecompress(input, threshold, (thresholdWindow * thresholdMultiplier), thresholdMultiplier, start, keepWebp, quiet, cache, cacheFilename);
   }
 }
+
+export default webpRecompress;
