@@ -1,7 +1,7 @@
 {
   "name": "webp-recompress",
-  "version": "0.1.0",
-  "description": "A program for generating visually similar WebP images.",
+  "version": "0.1.1",
+  "description": "A program that generates visually similar WebP images from JPEG inputs.",
   "main": "./dist/webp-recompress.js",
   "module": "./dist/webp-recompress.mjs",
   "scripts": {

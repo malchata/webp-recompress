@@ -3,6 +3,3 @@ dist
 node_modules
 npm-debug.log
 Thumbs.db
-test/images/test-png.webp
-test/images/test-jpeg.webp
-test/images/test-webp.png
