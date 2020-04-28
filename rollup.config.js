@@ -22,6 +22,7 @@ export default [
   {
     input: "./src/cmd.mjs",
     output: {
+      banner: "#!/usr/bin/env node",
       file: pkg.bin["webp-recompress"],
       format: "cjs"
     },
