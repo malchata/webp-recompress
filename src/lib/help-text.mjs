@@ -23,16 +23,19 @@ Arguments:
                  an acceptable SSIMULACRA scoring range. For example, if a
                  threshold of 0.02 and a window value of 0.0025 is specified,
                  the acceptable SSIMULACRA score range becomes 0.0175 to 0.0225.
-                 Wider windows make webp-recompress faster more lenient. If any
-                 given combination of a threshold and its window can't produce a
-                 desirable result, then this value is multiplied by the value
-                 given in the -m flag.
+                 Wider windows make webp-recompress more lenient (and faster).
+                 If any given combination of a threshold and its window can't
+                 produce a desirable result, then this value is multiplied by
+                 the value given in the -m flag and webp-recompress runs again.
                  Default: ${defaults.thresholdWindow}
   -m N ......... The number by which the threshold window is multipled in the
                  event a suitable image candidate can't be encoded with the
                  initial threshold window. This effectively widens the window
                  so that a suitable candidate can eventually be generated rather
-                 than failing outright.
+                 than failing outright. Lower multipliers will take more time,
+                 but find more visually similar candidates, whereas higher
+                 multipliers will take less time, but find less visually similar
+                 candidates.
                  Default: ${defaults.thresholdMultiplier}
   -s N ......... The starting quality from 0 to 100. If the quality of the given
                  JPEG cannot be guessed, this value sets the starting quality
