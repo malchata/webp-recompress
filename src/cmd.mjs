@@ -1,4 +1,7 @@
+// Global modules
 import minimist from "minimist";
+
+// App modules
 import { defaults } from "./lib/utils";
 import helpText from "./lib/help-text";
 import webpRecompress from "./webp-recompress";

@@ -1,13 +1,12 @@
 // Global modules
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import util from "util";
 import chalk from "chalk";
 import hasha from "hasha";
 
 // App modules
-import { defaults, jpegRegex, to, buildCacheSignature } from "./lib/utils.mjs";
+import { defaults, jpegRegex, to, buildCacheSignature, roundTo } from "./lib/utils.mjs";
 import convert from "./lib/convert.mjs";
 import identify from "./lib/identify.mjs";
 import cleanUp from "./lib/clean-up.mjs";
@@ -17,7 +16,6 @@ import trial from "./lib/trial.mjs";
 const statAsync = util.promisify(fs.stat);
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
-const dirname = typeof __dirname === "undefined" ? fileURLToPath(import.meta.url.replace("/test.mjs", "")) : __dirname;
 
 async function webpRecompress (input, threshold = defaults.threshold, thresholdWindow = defaults.thresholdWindow, thresholdMultiplier = defaults.thresholdMultiplier, start = defaults.start, keepWebp = defaults.keepWebp, quiet = defaults.quiet, verbose = defaults.verbose, cache = defaults.cache, cacheFilename = defaults.cacheFilename, prior = false, priorTrials) {
   // Ensure the quality is within a reasonable range
@@ -39,10 +37,11 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
   }
 
   // Initialize the threshold window, but clamp it to an acceptable range
-  const min = (threshold - thresholdWindow) < 0 ? 0 : (threshold - thresholdWindow);
-  const max = (threshold + thresholdWindow) > 1 ? 1 : (threshold + thresholdWindow);
+  const min = (threshold - thresholdWindow) < 0 ? 0 : roundTo(threshold - thresholdWindow, 6);
+  const max = (threshold + thresholdWindow) > 1 ? 1 : roundTo(threshold + thresholdWindow, 6);
+  const cacheFilePath = path.resolve(process.cwd(), cacheFilename);
+  const cacheSignature = buildCacheSignature(threshold, thresholdWindow);
 
-  const cacheFilePath = path.resolve(dirname, cacheFilename);
   let state, data, inputSize, size, score, cacheEntries, inputHash, lastQuality;
   let quality = Number(start);
   let floor = 0;
@@ -60,7 +59,7 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
       // No cache? Create an empty object for now.
       cacheEntries = {};
 
-      if (!quiet) {
+      if (!quiet && verbose) {
         console.warn(chalk.bold.yellow("Cache not found. Creating from scratch..."));
       }
     }
@@ -87,7 +86,7 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
       if (!state) {
         quality = start;
 
-        if (!quiet) {
+        if (!quiet && verbose) {
           console.log(`Couldn't guess JPEG quality. Starting at q${quality}`);
         }
       } else {
@@ -119,29 +118,30 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
     if (inputHash in cacheEntries) {
       let cacheEntry = cacheEntries[inputHash];
 
-      if (typeof cacheEntry[buildCacheSignature(threshold, thresholdWindow)] === "number") {
-        if (!quiet) {
+      if (cacheSignature in cacheEntry) {
+        if (!quiet && verbose) {
           console.log(chalk.green.bold("Cache hit!"));
         }
 
-        quality = cacheEntry[buildCacheSignature(threshold, thresholdWindow)];
+        quality = cacheEntry[cacheSignature];
 
         [state, data, score, size] = await trial(input, inputSize, files, quality, quiet, min, max, trials);
 
         if (!state) {
-          if (!quiet) {
+          if (!quiet && verbose) {
             console.error(chalk.red.bold("Couldn't run image trial!"));
           }
 
           return false;
         }
 
-        console.log(chalk.bold.green(`Best candidate found: q${quality}`));
-        cleanUp(files, input, keepWebp);
-      } else {
         if (!quiet) {
-          console.warn(chalk.green.yellow("Cache miss!"));
+          console.log(chalk.bold.green(`Best candidate found: q${quality}`));
         }
+
+        await cleanUp(files, input, keepWebp);
+      } else if (!quiet && verbose) {
+        console.warn(chalk.green.yellow("Cache miss!"));
       }
     }
   }
@@ -193,11 +193,11 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
         cacheEntries[inputHash] = {};
       }
 
-      cacheEntries[inputHash][buildCacheSignature(threshold, thresholdWindow)] = quality;
+      cacheEntries[inputHash][cacheSignature] = quality;
 
       [state] = await to(writeFileAsync(cacheFilePath, JSON.stringify(cacheEntries)), quiet);
 
-      if (!state) {
+      if (!state && verbose) {
         console.warn(chalk.yellow.bold(`Couldn't write cache to ${cacheFilePath}`));
       }
     }
@@ -206,12 +206,12 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
       console.log(chalk.bold.green(`Best candidate found: q${quality}`));
     }
 
-    cleanUp(files, input, keepWebp);
+    await cleanUp(files, input, keepWebp);
 
     return true;
   } else {
     // Try again, but adjust the scoring window
-    return await webpRecompress(input, threshold, (thresholdWindow * thresholdMultiplier), thresholdMultiplier, quality, keepWebp, quiet, verbose, cache, cacheFilename, true, trials);
+    return await webpRecompress(input, threshold, roundTo(thresholdWindow * thresholdMultiplier, 6), thresholdMultiplier, quality, keepWebp, quiet, verbose, cache, cacheFilename, true, trials);
   }
 }
 

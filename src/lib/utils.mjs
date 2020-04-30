@@ -1,9 +1,10 @@
+// Global modules
 import chalk from "chalk";
 
 export const defaults = {
   threshold: 0.02,
-  thresholdWindow: 0.000625,
-  thresholdMultiplier: 1.5,
+  thresholdWindow: 0.00125,
+  thresholdMultiplier: 2,
   start: 75,
   fail: false,
   keepWebp: false,
@@ -26,3 +27,5 @@ export const to = (promise, quiet) => promise.then(data => [true, data]).catch(e
 });
 
 export const buildCacheSignature = (threshold, thresholdWindow) => `${threshold}|${thresholdWindow}`;
+
+export const roundTo = (n, precision) => Number(n.toFixed(precision));

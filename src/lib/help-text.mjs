@@ -1,3 +1,4 @@
+// App modules
 import { defaults } from "./utils.mjs";
 
 export default `
@@ -43,6 +44,8 @@ Arguments:
                  Default: ${defaults.start}
   -k ........... Whether or not to keep the resulting WebP file.
                  Default: ${defaults.keepWebp}
+  -v ........... Verbose logging. This reveals more information about what might
+                 be going on as webp-recompress runs.
   -q ........... Silence all console output, including errors (overrides -v).
                  Default: ${defaults.quiet}
   -c ........... Enables the encoding cache. When enabled, webp-recompress will

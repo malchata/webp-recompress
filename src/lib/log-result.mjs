@@ -1,4 +1,4 @@
-export default function (q, score, size, inputSize, min, max) {
+export default function (q, score, size, inputSize) {
   let smaller = size < inputSize;
   let change = Math.abs(((size / inputSize) - 1) * 100).toFixed(2);
 

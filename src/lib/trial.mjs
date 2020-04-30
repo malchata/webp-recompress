@@ -1,11 +1,15 @@
+// Global modules
 import fs from "fs";
 import util from "util";
+
+// App modules
 import { to } from "./utils.mjs";
 import encodeWebp from "./encode-webp.mjs";
 import decodeWebp from "./decode-webp.mjs";
 import ssimulacra from "./ssimulacra.mjs";
 import logResult from "./log-result.mjs";
 
+// Promisified methods
 const statAsync = util.promisify(fs.stat);
 
 export default async function (input, inputSize, files, quality, quiet, min, max, trials) {
