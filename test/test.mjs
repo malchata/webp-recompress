@@ -14,7 +14,7 @@ describe("webp-recompress", function () {
   it("should find the best lossy WebP from a JPEG", async function () {
     const input = path.resolve(__dirname, "fixtures", "test-jpeg.jpg");
 
-    return webpRecompress(input, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, defaults.keepWebp, true).then(works => {
+    return webpRecompress(input, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, defaults.keepWebp, true, false).then(works => {
       assert.strictEqual(works, true);
     }).catch(error => {
       assert.fail(error);

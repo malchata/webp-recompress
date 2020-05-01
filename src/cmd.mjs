@@ -20,9 +20,7 @@ import webpRecompress from "./webp-recompress";
     let keepWebp = argv.k || defaults.keepWebp;
     let quiet = argv.q || defaults.quiet;
     let verbose = argv.v || defaults.verbose;
-    let cache = argv.c || defaults.cache;
-    let cacheFilename = argv.cf || defaults.cacheFilename;
 
-    await webpRecompress(input, threshold, thresholdWindow, thresholdMultiplier, start, keepWebp, quiet, verbose, cache, cacheFilename);
+    await webpRecompress(input, threshold, thresholdWindow, thresholdMultiplier, start, keepWebp, quiet, verbose);
   }
 })();

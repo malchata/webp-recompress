@@ -9,9 +9,7 @@ export const defaults = {
   fail: false,
   keepWebp: false,
   quiet: false,
-  verbose: false,
-  cache: false,
-  cacheFilename: "./webpcache.json"
+  verbose: false
 };
 
 export const jpegRegex = /\.jpe?g$/i;
@@ -25,7 +23,5 @@ export const to = (promise, quiet) => promise.then(data => [true, data]).catch(e
 
   return [false, error];
 });
-
-export const buildCacheSignature = (threshold, thresholdWindow) => `${threshold}|${thresholdWindow}`;
 
 export const roundTo = (n, precision) => Number(n.toFixed(precision));

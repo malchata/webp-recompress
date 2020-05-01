@@ -48,10 +48,4 @@ Arguments:
                  be going on as webp-recompress runs.
   -q ........... Silence all console output, including errors (overrides -v).
                  Default: ${defaults.quiet}
-  -c ........... Enables the encoding cache. When enabled, webp-recompress will
-                 keep track of the best settings for images in a JSON file. When
-                 populated, this will speed up repeat builds.
-                 Default: ${defaults.cache}
-  -cf [FILE] ... The name of the file which stores the cache JSON.
-                 Default: ${defaults.cacheFilename}
 `;
