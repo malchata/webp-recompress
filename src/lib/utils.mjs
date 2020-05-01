@@ -2,9 +2,9 @@
 import chalk from "chalk";
 
 export const defaults = {
-  threshold: 0.02,
-  thresholdWindow: 0.00125,
-  thresholdMultiplier: 2,
+  threshold: 0.0175,
+  thresholdWindow: 0.0025,
+  thresholdMultiplier: 1.25,
   start: 75,
   fail: false,
   keepWebp: false,
@@ -25,3 +25,5 @@ export const to = (promise, quiet) => promise.then(data => [true, data]).catch(e
 });
 
 export const roundTo = (n, precision) => Number(n.toFixed(precision));
+
+export const getQualityInterval = (score, threshold, quality) => Math.abs(Math.round(Math.log(threshold / score) * (100 - quality)));

@@ -5,7 +5,7 @@ import util from "util";
 import chalk from "chalk";
 
 // App modules
-import { defaults, jpegRegex, to, roundTo } from "./lib/utils.mjs";
+import { defaults, jpegRegex, to, roundTo, getQualityInterval } from "./lib/utils.mjs";
 import convert from "./lib/convert.mjs";
 import identify from "./lib/identify.mjs";
 import cleanUp from "./lib/clean-up.mjs";
@@ -37,12 +37,10 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
   const min = (threshold - thresholdWindow) < 0 ? 0 : roundTo(threshold - thresholdWindow, 6);
   const max = (threshold + thresholdWindow) > 1 ? 1 : roundTo(threshold + thresholdWindow, 6);
 
-  let state, data, inputSize, size, score, lastQuality;
+  let state, data, inputSize, size, score;
   let quality = Number(start);
-  let floor = 0;
-  let ceil = 100;
   let files = {};
-  let trials = priorTrials || {};
+  let trials = priorTrials || [];
 
   // Get the size of input file (we'll need it later)
   [state, data] = await to(statAsync(input), quiet);
@@ -73,6 +71,7 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
       }
     } else {
       quality = Number(quality);
+      start = Number(start);
 
       if (!quiet && verbose) {
         console.log(`Guessed JPEG quality at q${quality}`);
@@ -89,21 +88,11 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
   }
 
   if (!quiet && verbose) {
-    console.log(`Finding best candidate within threshold ${min}—${max}...`);
+    console.log(`Trying threshold range: ${min}—${max}...`);
   }
 
   do {
-    lastQuality = quality;
-
     [state, data, score, size] = await trial(input, inputSize, files, quality, quiet, min, max, trials);
-
-    if (!state) {
-      if (!quiet) {
-        console.error(chalk.red.bold("Couldn't run image trial!"));
-      }
-
-      return false;
-    }
 
     // Record the attempt
     trials[quality] = {
@@ -111,24 +100,20 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
       size
     };
 
-    // Image is too distorted
-    if (score > max) {
-      floor = quality > 100 ? 100 : quality;
-    }
-
-    // Image is too high quality
-    if (score < min) {
-      ceil = quality < 0 ? 0 : quality;
-    }
-
-    quality = Math.round(floor + ((ceil - floor) / 2));
-
-    if (lastQuality === quality) {
+    if (score <= max && score >= min) {
       break;
     }
-  } while (score > max || score < min);
 
-  if (size < inputSize && score < max && score > min) {
+    const interval = getQualityInterval(score, threshold, quality);
+
+    if (score < max && score < min) {
+      quality = quality - interval;
+    } else if (score > max) {
+      quality = quality + interval;
+    }
+  } while (true);
+
+  if (size < inputSize) {
     if (!quiet) {
       console.log(chalk.bold.green(`Best candidate found: q${quality}`));
     }
@@ -137,8 +122,9 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdW
 
     return true;
   } else {
+    console.log(quality);
     // Try again after expanding the threshold window
-    return await webpRecompress(input, threshold, roundTo(thresholdWindow * thresholdMultiplier, 6), thresholdMultiplier, quality, keepWebp, quiet, verbose, true, trials);
+    return await webpRecompress(input, threshold, roundTo(thresholdWindow * thresholdMultiplier, 6), thresholdMultiplier, start, keepWebp, quiet, verbose, true, trials);
   }
 }
 

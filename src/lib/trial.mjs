@@ -15,7 +15,7 @@ const statAsync = util.promisify(fs.stat);
 export default async function (input, inputSize, files, quality, quiet, min, max, trials) {
   let state, data, score, size;
 
-  if (quality in trials) {
+  if (trials.indexOf(quality) > -1) {
     score = trials[quality].score;
     size = trials[quality].size;
   } else {
@@ -23,21 +23,21 @@ export default async function (input, inputSize, files, quality, quiet, min, max
     [state, data] = await to(encodeWebp(input, files.outputWebp, quality), quiet);
 
     if (!state) {
-      return false;
+      return [false, data];
     }
 
     // Decode that WebP to a PNG so SSIMULACRA can compare it to the reference
     [state, data] = await to(decodeWebp(files.outputWebp, files.webpPng), quiet);
 
     if (!state) {
-      return false;
+      return [false, data];
     }
 
     // Get the SSIMULACRA score for this iteration
     [state, data] = await to(ssimulacra(input, files.webpPng), quiet);
 
     if (!state) {
-      return false;
+      return [false, data];
     }
 
     score = parseFloat(data.stdout);
@@ -47,12 +47,12 @@ export default async function (input, inputSize, files, quality, quiet, min, max
     size = data.size;
 
     if (!state) {
-      return false;
+      return [false, data];
     }
+  }
 
-    if (!quiet) {
-      logResult(quality, score, size, inputSize, min, max);
-    }
+  if (!quiet) {
+    logResult(quality, score, size, inputSize, min, max);
   }
 
   return [true, data, score, size, size < inputSize];
