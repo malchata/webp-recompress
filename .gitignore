@@ -4,4 +4,5 @@ node_modules
 npm-debug.log
 Thumbs.db
 crap
-webpcache.json
+test/fixtures/*.webp
+test/fixtures/*.png
