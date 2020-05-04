@@ -14,13 +14,12 @@ import webpRecompress from "./webp-recompress";
   } else {
     let input = argv.i;
     let threshold = argv.t || defaults.threshold;
-    let thresholdWindow = argv.w || defaults.thresholdWindow;
     let thresholdMultiplier = argv.m || defaults.thresholdMultiplier;
     let start = argv.s || defaults.start;
     let keepWebp = argv.k || defaults.keepWebp;
     let quiet = argv.q || defaults.quiet;
     let verbose = argv.v || defaults.verbose;
 
-    await webpRecompress(input, threshold, thresholdWindow, thresholdMultiplier, start, keepWebp, quiet, verbose);
+    await webpRecompress(input, threshold, thresholdMultiplier, start, keepWebp, quiet, verbose);
   }
 })();

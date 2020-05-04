@@ -12,10 +12,10 @@ import logResult from "./log-result.mjs";
 // Promisified methods
 const statAsync = util.promisify(fs.stat);
 
-export default async function (input, inputSize, files, quality, quiet, min, max, trials) {
+export default async function (input, inputSize, files, quality, quiet, trials) {
   let state, data, score, size;
 
-  if (trials.indexOf(quality) > -1) {
+  if (quality in trials) {
     score = trials[quality].score;
     size = trials[quality].size;
   } else {
@@ -52,7 +52,7 @@ export default async function (input, inputSize, files, quality, quiet, min, max
   }
 
   if (!quiet) {
-    logResult(quality, score, size, inputSize, min, max);
+    logResult(quality, score, size, inputSize);
   }
 
   return [true, data, score, size, size < inputSize];
