@@ -12,7 +12,7 @@ import logResult from "./log-result.mjs";
 // Promisified methods
 const statAsync = util.promisify(fs.stat);
 
-export default async function (input, inputSize, files, quality, quiet, trials) {
+export default async function (input, inputSize, { outputWebp, webpPng }, quality, quiet, trials) {
   let state, data, score, size;
 
   if (quality in trials) {
@@ -20,21 +20,21 @@ export default async function (input, inputSize, files, quality, quiet, trials) 
     size = trials[quality].size;
   } else {
     // Encode WebP for this run
-    [state, data] = await to(encodeWebp(input, files.outputWebp, quality), quiet);
+    [state, data] = await to(encodeWebp(input, outputWebp, quality), quiet);
 
     if (!state) {
       return [false, data];
     }
 
     // Decode that WebP to a PNG so SSIMULACRA can compare it to the reference
-    [state, data] = await to(decodeWebp(files.outputWebp, files.webpPng), quiet);
+    [state, data] = await to(decodeWebp(outputWebp, webpPng), quiet);
 
     if (!state) {
       return [false, data];
     }
 
     // Get the SSIMULACRA score for this iteration
-    [state, data] = await to(ssimulacra(input, files.webpPng), quiet);
+    [state, data] = await to(ssimulacra(input, webpPng), quiet);
 
     if (!state) {
       return [false, data];
@@ -43,17 +43,17 @@ export default async function (input, inputSize, files, quality, quiet, trials) 
     score = parseFloat(data.stdout);
 
     // Get the size of this iteration's WebP outputWebp file
-    [state, data] = await to(statAsync(files.outputWebp), quiet);
+    [state, data] = await to(statAsync(outputWebp), quiet);
     size = data.size;
 
     if (!state) {
       return [false, data];
     }
+
+    if (!quiet) {
+      logResult(quality, score, size, inputSize);
+    }
   }
 
-  if (!quiet) {
-    logResult(quality, score, size, inputSize);
-  }
-
-  return [true, data, score, size, size < inputSize];
+  return [true, data, score, size];
 }

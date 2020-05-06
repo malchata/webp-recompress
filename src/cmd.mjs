@@ -16,10 +16,9 @@ import webpRecompress from "./webp-recompress";
     let threshold = argv.t || defaults.threshold;
     let thresholdMultiplier = argv.m || defaults.thresholdMultiplier;
     let start = argv.s || defaults.start;
-    let keepWebp = argv.k || defaults.keepWebp;
     let quiet = argv.q || defaults.quiet;
     let verbose = argv.v || defaults.verbose;
 
-    await webpRecompress(input, threshold, thresholdMultiplier, start, keepWebp, quiet, verbose);
+    await webpRecompress(input, threshold, thresholdMultiplier, start, quiet, verbose);
   }
 })();

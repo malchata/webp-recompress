@@ -20,7 +20,7 @@ Arguments:
                  but will try again after adjusting the threshold upward by an
                  amount determined by the multipler flag described below.
                  Default: ${defaults.threshold}
-  -m N ......... The number by which the threshold is multipled in the event a
+  -m N ......... The number by which the threshold is multiplied in the event a
                  suitable image candidate can't be determined with the initial
                  threshold given. This ensures that a suitable candidate can
                  eventually be generated rather than failing outright. Lower
@@ -32,10 +32,9 @@ Arguments:
                  JPEG cannot be guessed, this value sets the starting quality
                  level webp-recompress uses to recompress JPEGs to WebP.
                  Default: ${defaults.start}
-  -k ........... Whether or not to keep the resulting WebP file.
-                 Default: ${defaults.keepWebp}
   -v ........... Verbose logging. This reveals more information about what might
                  be going on as webp-recompress runs.
+                 Default: ${defaults.verbose}
   -q ........... Silence all console output, including errors (overrides -v).
                  Default: ${defaults.quiet}
 `;

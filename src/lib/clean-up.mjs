@@ -1,16 +1,18 @@
 // Global modules
 import fs from "fs";
-import { to, webpRegex } from "./utils.mjs";
 import util from "util";
+
+// App modules
+import { to, webpRegex } from "./utils.mjs";
 
 // Promisified methods
 const unlinkAsync = util.promisify(fs.unlinkSync);
 
-export default function (files, input, keepWebp) {
+export default function (files) {
   const fileList = Object.values(files);
 
   fileList.forEach(async file => {
-    if (webpRegex.test(file) && keepWebp) {
+    if (webpRegex.test(file)) {
       return;
     }
 
