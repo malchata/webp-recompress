@@ -1,6 +1,6 @@
 {
   "name": "webp-recompress",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "A program that generates visually similar WebP images from JPEG inputs.",
   "main": "./dist/webp-recompress.js",
   "module": "./dist/webp-recompress.mjs",
@@ -50,7 +50,7 @@
     "eslint": "^7.0.0",
     "mocha": "^7.1.2",
     "rimraf": "^3.0.2",
-    "rollup": "^2.9.0",
+    "rollup": "^2.9.1",
     "rollup-plugin-babel": "^4.4.0"
   }
 }

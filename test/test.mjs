@@ -1,12 +1,14 @@
 /* global describe it */
 
 import path from "path";
+import fs from "fs";
 import assert from "assert";
-import { fileURLToPath } from "url";
+import util from "util";
+import url from "url";
 import { defaults, jpegRegex, webpRegex, to, roundTo, getQualityInterval, clampQuality, getFinalQuality } from "../src/lib/utils.mjs";
 import webpRecompress from "../src/webp-recompress.mjs";
 
-const __dirname = fileURLToPath(import.meta.url.replace("/test.mjs", ""));
+const __dirname = url.fileURLToPath(import.meta.url.replace("/test.mjs", ""));
 
 const testPromise = function(condition) {
   return new Promise((resolve, reject) => {
@@ -22,8 +24,8 @@ const testPromise = function(condition) {
 describe("webp-recompress", function() {
   this.timeout(20000);
 
-  const jpegFile = path.resolve(__dirname, "fixtures", "test-jpeg.jpg");
-  const webpFile = path.resolve(__dirname, "fixtures", "some-webp.webp");
+  const jpegFile = path.resolve(__dirname, "fixtures", "test.jpg");
+  const webpFile = path.resolve(__dirname, "fixtures", "test.webp");
   const pngFile = path.resolve(__dirname, "fixtures", "sacrificial.png");
 
   describe("enforces valid threshold range", function() {
@@ -229,29 +231,35 @@ describe("webp-recompress", function() {
     });
   });
 
-  // describe("enforces valid quality range", function () {
-  //   it("should fail when a starting quality more than 100 is given", async function () {
-  //     return webpRecompress(jpegFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, 101, true, false).then(([status]) => {
-  //       assert.strictEqual(status, false);
-  //     }).catch(error => {
-  //       assert.fail(error);
-  //     });
-  //   });
-  //
-  //   it("should fail when a starting quality less than 0 is given", async function () {
-  //     return webpRecompress(jpegFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, -1, true, false).then(([status]) => {
-  //       assert.strictEqual(status, false);
-  //     }).catch(error => {
-  //       assert.fail(error);
-  //     });
-  //   });
-  // });
+  it("should run successfully", async function () {
+    return await webpRecompress(jpegFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(async ([status]) => {
+      const exists = await fileExists(webpFile);
 
-  // it("should find the best lossy WebP from a JPEG", async function () {
-  //   return webpRecompress(jpegFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(([status]) => {
-  //     assert.strictEqual(status, true);
-  //   }).catch(error => {
-  //     assert.fail(error);
-  //   });
-  // });
+      assert.strictEqual(status && exists, true);
+    }).catch(error => {
+      assert.fail(error);
+    });
+  });
 });
+
+function fileExists (input, shouldNotExist = false) {
+  return new Promise((resolve, reject) => {
+    let file;
+
+    try {
+      file = fs.statSync(input);
+    } catch (error) {
+      if (shouldNotExist) {
+        resolve(typeof file === "undefined");
+
+        return;
+      }
+
+      reject(false);
+
+      return;
+    }
+
+    resolve(!!file.size);
+  });
+}

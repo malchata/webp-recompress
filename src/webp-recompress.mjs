@@ -20,7 +20,7 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
 
   // Ensure the quality is within a reasonable range
   if (start > 100 || start < 0) {
-    return [false, "Starting quality should be between 0 and 100."];
+    start = clampQuality(start);
   }
 
   // Make sure the SSIMULACRA threshold is OK

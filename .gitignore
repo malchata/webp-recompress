@@ -4,6 +4,3 @@ node_modules
 npm-debug.log
 Thumbs.db
 crap
-test/fixtures/*.webp
-test/fixtures/*.png
-!test/fixtures/sacrificial.png
