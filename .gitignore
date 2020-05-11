@@ -6,3 +6,4 @@ Thumbs.db
 crap
 test/fixtures/*.webp
 test/fixtures/*.png
+!test/fixtures/sacrificial.png

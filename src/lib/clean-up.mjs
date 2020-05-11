@@ -9,13 +9,11 @@ import { to, webpRegex } from "./utils.mjs";
 const unlinkAsync = util.promisify(fs.unlinkSync);
 
 export default function (files) {
-  const fileList = Object.values(files);
-
-  fileList.forEach(async file => {
+  Object.values(files).forEach(async file => {
     if (webpRegex.test(file)) {
       return;
     }
 
-    await to(unlinkAsync(file), true);
+    await to(unlinkAsync(file));
   });
 }

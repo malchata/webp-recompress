@@ -1,6 +1,6 @@
 {
   "name": "webp-recompress",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A program that generates visually similar WebP images from JPEG inputs.",
   "main": "./dist/webp-recompress.js",
   "module": "./dist/webp-recompress.mjs",
@@ -8,7 +8,8 @@
     "test": "cross-env NODE_ENV=test mocha ./test/test.mjs --experimental-modules",
     "lint": "eslint --ext .mjs ./src/**",
     "clean": "rimraf dist",
-    "build": "npm run clean && rollup -c"
+    "build": "npm run clean && rollup -c",
+    "prepublish": "npm run build && npm test"
   },
   "bin": {
     "webp-recompress": "./dist/cmd.js"
@@ -46,10 +47,10 @@
     "@rollup/plugin-node-resolve": "^7.1.3",
     "babel-eslint": "^10.1.0",
     "cross-env": "^7.0.2",
-    "eslint": "^6.8.0",
+    "eslint": "^7.0.0",
     "mocha": "^7.1.2",
     "rimraf": "^3.0.2",
-    "rollup": "^2.7.6",
+    "rollup": "^2.9.0",
     "rollup-plugin-babel": "^4.4.0"
   }
 }

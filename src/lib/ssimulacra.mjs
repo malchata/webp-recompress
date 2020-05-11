@@ -6,9 +6,7 @@ import ssimulacra from "ssimulacra-bin";
 // Promisified methods
 const execFileAsync = util.promisify(childProcess.execFile);
 
-export default async function (refPng, webpPng) {
-  return await execFileAsync(ssimulacra, [
-    refPng,
-    webpPng
-  ]);
-}
+export default async (refPng, webpPng) => await execFileAsync(ssimulacra, [
+  refPng,
+  webpPng
+]);

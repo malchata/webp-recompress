@@ -1,5 +1,6 @@
 // Global modules
 import minimist from "minimist";
+import chalk from "chalk";
 
 // App modules
 import { defaults } from "./lib/utils";
@@ -11,14 +12,23 @@ import webpRecompress from "./webp-recompress";
 
   if (typeof argv.i === "undefined") {
     console.log(helpText);
-  } else {
-    let input = argv.i;
-    let threshold = argv.t || defaults.threshold;
-    let thresholdMultiplier = argv.m || defaults.thresholdMultiplier;
-    let start = argv.s || defaults.start;
-    let quiet = argv.q || defaults.quiet;
-    let verbose = argv.v || defaults.verbose;
 
-    await webpRecompress(input, threshold, thresholdMultiplier, start, quiet, verbose);
+    return;
   }
+
+  const input = argv.i;
+  const threshold = +argv.t || defaults.threshold;
+  const thresholdMultiplier = +argv.m || defaults.thresholdMultiplier;
+  const start = +argv.s || defaults.start;
+  const quiet = argv.q || defaults.quiet;
+  const verbose = argv.v || defaults.verbose;
+  const [state, message] = await webpRecompress(input, threshold, thresholdMultiplier, start, quiet, verbose);
+
+  if (!state && !quiet) {
+    console.error(chalk.red.bold(message));
+
+    return;
+  }
+
+  console.log(chalk.green.bold(message));
 })();

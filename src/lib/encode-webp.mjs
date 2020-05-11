@@ -6,13 +6,11 @@ import cwebp from "cwebp-bin";
 // Promisified methods
 const execFileAsync = util.promisify(childProcess.execFile);
 
-export default async function (inputFile, outputFile, quality) {
-  return await execFileAsync(cwebp, [
-    "-q",
-    quality,
-    "-mt",
-    inputFile,
-    "-o",
-    outputFile
-  ]);
-}
+export default async (inputFile, outputFile, quality) => await execFileAsync(cwebp, [
+  "-q",
+  quality,
+  "-mt",
+  inputFile,
+  "-o",
+  outputFile
+]);

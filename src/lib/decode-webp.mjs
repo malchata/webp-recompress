@@ -6,10 +6,8 @@ import dwebp from "dwebp-bin";
 // Promisified methods
 const execFileAsync = util.promisify(childProcess.execFile);
 
-export default async function (inputFile, outputFile) {
-  return await execFileAsync(dwebp.path, [
-    inputFile,
-    "-o",
-    outputFile
-  ]);
-}
+export default async (inputFile, outputFile) => await execFileAsync(dwebp.path, [
+  inputFile,
+  "-o",
+  outputFile
+]);

@@ -5,9 +5,8 @@ import imagemagick from "imagemagick";
 // Promisified methods
 const identifyAsync = util.promisify(imagemagick.identify);
 
-export default async function (input) {
-  return await identifyAsync([
-    "-format",
-    "%Q",
-    input]);
-}
+export default async (input) => await identifyAsync([
+  "-format",
+  "%Q",
+  input
+]);
