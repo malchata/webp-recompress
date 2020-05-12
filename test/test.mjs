@@ -3,7 +3,6 @@
 import path from "path";
 import fs from "fs";
 import assert from "assert";
-import util from "util";
 import url from "url";
 import { defaults, jpegRegex, webpRegex, to, roundTo, getQualityInterval, clampQuality, getFinalQuality } from "../src/lib/utils.mjs";
 import webpRecompress from "../src/webp-recompress.mjs";

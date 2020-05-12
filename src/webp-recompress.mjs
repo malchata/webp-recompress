@@ -126,9 +126,12 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
   } while (score > threshold || size >= inputSize);
 
   if (score <= threshold && size < inputSize) {
+    const finalQuality = getFinalQuality(score, trials);
+
+    await trial(input, inputSize, files, finalQuality, true, {});
     await cleanUp(files);
 
-    return [true, `Candidate found at q${getFinalQuality(score, trials)}: ${roundTo((inputSize) / 1024, 2)} KB -> ${roundTo((size) / 1024, 2)} KB`];
+    return [true, `Candidate found at q${finalQuality}: ${roundTo((inputSize) / 1024, 2)} KB -> ${roundTo((size) / 1024, 2)} KB`];
   }
 
   // Try again after multiplying the threshold by the given multiplier
