@@ -62,8 +62,6 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
         console.log(`Couldn't guess JPEG quality. Starting at q${quality}`);
       }
     } else {
-      quality = +quality;
-
       if (!quiet && verbose) {
         console.log(`Guessed JPEG quality at q${quality}`);
       }
@@ -104,7 +102,11 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
     // infinite loop. I have no other strategy at the moment for solving that
     // problem except for this little diddy below.
     if (trials[quality].attempts > 3) {
-      size >= inputSize ? quality-- : quality++;
+      if (size >= inputSize) {
+        quality -= 2;
+      } else {
+        quality += 2;
+      }
 
       break;
     }
@@ -126,7 +128,7 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
   } while (score > threshold || size >= inputSize);
 
   if (score <= threshold && size < inputSize) {
-    quality = getFinalQuality(score, trials);
+    [quality, size] = getFinalQuality(score, trials);
 
     await trial(input, inputSize, files, quality, true, {});
     await cleanUp(files);

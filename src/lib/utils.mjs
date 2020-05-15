@@ -1,6 +1,6 @@
 export const defaults = {
-  threshold: 0.01,
-  thresholdMultiplier: 1.5,
+  threshold: 0.00875,
+  thresholdMultiplier: 2.375,
   start: 75,
   quiet: false,
   verbose: false
@@ -43,7 +43,7 @@ export function getFinalQuality (score, trials) {
     const trial = trials[quality];
 
     if (score === trial.score) {
-      return +quality;
+      return [+quality, trial.size];
     }
   }
 }

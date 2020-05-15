@@ -8,6 +8,7 @@ const execFileAsync = util.promisify(childProcess.execFile);
 
 export default async (inputFile, outputFile) => await execFileAsync(dwebp.path, [
   inputFile,
+  "-mt",
   "-o",
   outputFile
 ]);
