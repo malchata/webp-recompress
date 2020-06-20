@@ -14,6 +14,7 @@ import { defaults, jpegRegex, webpRegex, to, roundTo, getQualityInterval, clampQ
 import webpRecompress from "../src/webp-recompress.mjs";
 
 const __dirname = url.fileURLToPath(import.meta.url.replace("/test.mjs", ""));
+const scoreTest = /0\.\d{8}/;
 
 const testPromise = function (condition) {
   return new Promise((resolve, reject) => {
@@ -105,7 +106,6 @@ describe("webp-recompress", function () {
 
     describe("ssimulacra.mjs", function () {
       it("should return the score for two comparison images", async function () {
-        const expectedScore = 0.02214838;
         let score;
 
         await encodeWebP(jpegFile, webpFile, 75);
@@ -117,15 +117,13 @@ describe("webp-recompress", function () {
         await deleteFile(webpFile);
         await deleteFile(pngRef);
 
-        assert.strictEqual(score, expectedScore);
+        assert.strictEqual(scoreTest.test(score), true);
       });
     });
 
     describe("trial.mjs", function () {
       it("should encode an image and relevant image characteristics", async function () {
         const inputSize = 74787;
-        const expectedSize = 67802;
-        const expectedScore = 0.02881831;
         const files = {
           outputWebp: webpFile,
           webpPng: pngRef
@@ -136,7 +134,7 @@ describe("webp-recompress", function () {
         deleteFile(webpFile);
         deleteFile(pngRef);
 
-        assert.strictEqual(state && typeof data === "object" && score === expectedScore && size === expectedSize, true);
+        assert.strictEqual(state && typeof data === "object" && scoreTest.test(score) === true && size < inputSize, true);
       });
     });
 
@@ -293,9 +291,10 @@ describe("webp-recompress", function () {
   it("should run successfully", async function () {
     return await webpRecompress(jpegFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(async ([status]) => {
       const exists = await fileExists(webpFile);
+      const smaller = await assertSmaller(jpegFile, webpFile);
       await deleteFile(webpFile);
 
-      assert.strictEqual(status && exists, true);
+      assert.strictEqual(status && exists && smaller, true);
     }).catch(error => {
       assert.fail(error);
     });
@@ -335,5 +334,33 @@ function deleteFile (input) {
 
       resolve(true);
     });
+  });
+}
+
+function assertSmaller (input, output) {
+  return new Promise((resolve, reject) => {
+    let inFile, outFile;
+
+    try {
+      inFile = fs.statSync(input);
+    } catch (error) {
+      reject(error);
+
+      return;
+    }
+
+    try {
+      outFile = fs.statSync(output);
+    } catch (error) {
+      reject(error);
+    }
+
+    if (outFile.size < inFile.size) {
+      resolve(true);
+
+      return;
+    }
+
+    reject(false);
   });
 }
