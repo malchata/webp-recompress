@@ -3,12 +3,19 @@ import minimist from "minimist";
 import chalk from "chalk";
 
 // App modules
+import { version } from "../package.json";
 import { defaults } from "./lib/utils";
 import helpText from "./lib/help-text";
 import webpRecompress from "./webp-recompress";
 
 (async function() {
   const argv = minimist(process.argv.slice(2));
+
+  if (typeof argv.r !== "undefined") {
+    console.log(version);
+
+    return;
+  }
 
   if (typeof argv.i === "undefined") {
     console.log(helpText);

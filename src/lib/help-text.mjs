@@ -37,4 +37,7 @@ Arguments:
                  Default: ${defaults.verbose}
   -q ........... Silence all console output, including errors (overrides -v).
                  Default: ${defaults.quiet}
+  -r............ Prints the current version of webp-recompress. If this argument
+                 is supplied, all other arguments will be ignored, and no image
+                 processing will occur.
 `;
