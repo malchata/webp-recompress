@@ -1,6 +1,6 @@
 # webp-recompress
 
-Inspired by [jpeg-recompress](https://github.com/danielgtaylor/jpeg-archive#jpeg-recompress), webp-recompress is a program that takes a JPEG input and recompresses it to a smaller WebP image within a specified [SSIMULACRA](https://cloudinary.com/blog/detecting_the_psychovisual_impact_of_compression_related_artifacts_using_ssimulacra) threshold to limit quality loss. It can be used as a local module or a CLI (recommended). Install webp-recompress globally like so:
+Inspired by [jpeg-recompress](https://github.com/danielgtaylor/jpeg-archive#jpeg-recompress), webp-recompress is a program that takes a JPEG input and recompresses it to a smaller WebP image within a specified [SSIMULACRA](https://cloudinary.com/blog/detecting_the_psychovisual_impact_of_compression_related_artifacts_using_ssimulacra) threshold to limit quality loss. PNG inputs are also accepted, but they will be converted to lossless WebP with the most aggressive compression settings applied, rather than being converted to lossy WebP. It can be used as a local module or a CLI (recommended). Install webp-recompress globally like so:
 
 ```
 npm i -g webp-recompress
@@ -26,7 +26,7 @@ There are more arguments the CLI accepts. Though the default behavior of webp-re
 
 ### `-i [FILE]` _required_
 
-The input JPEG image. This is the only argument required by webp-recompress. Passing non-JPEG inputs
+The input image. This is the only argument required by webp-recompress. JPEG inputs will received the recompression treatment described earlier in this document, whereas PNG inputs will be converted to lossless WebP. Passing any other file types will throw an error.
 
 ### `-t [FLOAT]` _default: `0.00875`_
 
@@ -48,6 +48,10 @@ When this switch is present, verbose logging is turned on. This is useful if you
 
 When present, this switch turns off all logging. Turning this off may not be the best idea for basic usage, as you'll want to know if something goes wrong. If turned on, verbose logging will not work, even if the `-v` argument is provided.
 
+### `-r` _default: `false`_
+
+Prints the current version of webp-recompress. If passed, all other arguments will be ignored and no image processing will occur.
+
 ## API usage
 
 If you want to use webp-recompress in a Node.js program, you can do that:
@@ -55,6 +59,7 @@ If you want to use webp-recompress in a Node.js program, you can do that:
 ```javascript
 import webpRecompress from "webp-recompress";
 
+// Pesky IIFE needed if top-level `await` isn't available
 (async () => {
   const input = path.resolve(__dirname, "input.jpg");
   const threshold = 0.005;

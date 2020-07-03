@@ -10,7 +10,7 @@ import encodeWebP from "../src/lib/encode-webp.mjs";
 import identify from "../src/lib/identify.mjs";
 import ssimulacra from "../src/lib/ssimulacra.mjs";
 import trial from "../src/lib/trial.mjs";
-import { defaults, jpegRegex, webpRegex, to, roundTo, getQualityInterval, clampQuality, getFinalQuality } from "../src/lib/utils.mjs";
+import { defaults, jpegRegex, pngRegex, webpRegex, to, roundTo, getQualityInterval, clampQuality, getFinalQuality } from "../src/lib/utils.mjs";
 import webpRecompress from "../src/webp-recompress.mjs";
 
 const __dirname = url.fileURLToPath(import.meta.url.replace("/test.mjs", ""));
@@ -31,12 +31,14 @@ const testPromise = function (condition) {
 describe("webp-recompress", function () {
   this.timeout(20000);
 
-  const jpegFile = path.resolve(__dirname, "fixtures", "test.jpg");
-  const webpFile = path.resolve(__dirname, "fixtures", "test.webp");
+  const jpegFile = path.resolve(__dirname, "fixtures", "test-jpg.jpg");
+  const jpegWebpFile = path.resolve(__dirname, "fixtures", "test-jpg.webp");
   const decodeTestWebp = path.resolve(__dirname, "fixtures", "decode-test.webp");
   const decodeTestPng = path.resolve(__dirname, "fixtures", "decode-test.png");
-  const pngFile = path.resolve(__dirname, "fixtures", "sacrificial.png");
-  const pngRef = path.resolve(__dirname, "fixtures", "test.png");
+  const pngFile = path.resolve(__dirname, "fixtures", "test-png.png");
+  const pngWebpFile = path.resolve(__dirname, "fixtures", "test-png.webp");
+  const pngRef = path.resolve(__dirname, "fixtures", "test-ref.png");
+  const gifFile = path.resolve(__dirname, "fixtures", "sacrificial.gif");
 
   describe("enforces valid threshold range", function () {
     it("should fail when a threshold greater than 1 is given", async function () {
@@ -56,8 +58,8 @@ describe("webp-recompress", function () {
     });
   });
 
-  it("should reject a non-JPEG input file", async function () {
-    return await webpRecompress(pngFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(([status]) => {
+  it("should reject a non-JPEG or non-PNG input file", async function () {
+    return await webpRecompress(gifFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(([status]) => {
       assert.strictEqual(status, false);
     }).catch(error => {
       assert.fail(error);
@@ -87,9 +89,9 @@ describe("webp-recompress", function () {
 
     describe("encode-webp.mjs", function () {
       it("should encode a JPEG to a WebP", async function () {
-        await encodeWebP(jpegFile, webpFile, 75);
-        const exists = await fileExists(webpFile);
-        await deleteFile(webpFile);
+        await encodeWebP(jpegFile, jpegWebpFile, 75);
+        const exists = await fileExists(jpegWebpFile);
+        await deleteFile(jpegWebpFile);
 
         assert.strictEqual(exists, true);
       });
@@ -108,13 +110,13 @@ describe("webp-recompress", function () {
       it("should return the score for two comparison images", async function () {
         let score;
 
-        await encodeWebP(jpegFile, webpFile, 75);
-        await decodeWebP(webpFile, pngRef);
+        await encodeWebP(jpegFile, jpegWebpFile, 75);
+        await decodeWebP(jpegWebpFile, pngRef);
 
         score = await ssimulacra(jpegFile, pngRef);
         score = +score.stdout.trim();
 
-        await deleteFile(webpFile);
+        await deleteFile(jpegWebpFile);
         await deleteFile(pngRef);
 
         assert.strictEqual(scoreTest.test(score), true);
@@ -125,13 +127,13 @@ describe("webp-recompress", function () {
       it("should encode an image and relevant image characteristics", async function () {
         const inputSize = 74787;
         const files = {
-          outputWebp: webpFile,
+          outputWebp: jpegWebpFile,
           webpPng: pngRef
         };
         const quality = 60;
         const [state, data, score, size] = await trial(jpegFile, inputSize, files, quality, true, {});
 
-        deleteFile(webpFile);
+        deleteFile(jpegWebpFile);
         deleteFile(pngRef);
 
         assert.strictEqual(state && typeof data === "object" && scoreTest.test(score) === true && size < inputSize, true);
@@ -174,8 +176,12 @@ describe("webp-recompress", function () {
           assert.strictEqual(jpegRegex.test(jpegFile), true);
         });
 
+        it("`pngRegex` should match a PNG filename", function () {
+          assert.strictEqual(pngRegex.test(pngFile), true);
+        });
+
         it("`webpRegex` should match a WebP filename", function () {
-          assert.strictEqual(webpRegex.test(webpFile), true);
+          assert.strictEqual(webpRegex.test(jpegWebpFile), true);
         });
       });
 
@@ -288,11 +294,23 @@ describe("webp-recompress", function () {
     });
   });
 
-  it("should run successfully", async function () {
+  it("should run successfully with a JPEG input", async function () {
     return await webpRecompress(jpegFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(async ([status]) => {
-      const exists = await fileExists(webpFile);
-      const smaller = await assertSmaller(jpegFile, webpFile);
-      await deleteFile(webpFile);
+      const exists = await fileExists(jpegWebpFile);
+      const smaller = await assertSmaller(jpegFile, jpegWebpFile);
+      await deleteFile(jpegWebpFile);
+
+      assert.strictEqual(status && exists && smaller, true);
+    }).catch(error => {
+      assert.fail(error);
+    });
+  });
+
+  it("should run successfully with a PNG input", async function () {
+    return await webpRecompress(pngFile, defaults.threshold, defaults.thresholdWindow, defaults.thresholdMultiplier, defaults.start, true, false).then(async ([status]) => {
+      const exists = await fileExists(pngWebpFile);
+      const smaller = await assertSmaller(pngFile, pngWebpFile);
+      await deleteFile(pngWebpFile);
 
       assert.strictEqual(status && exists && smaller, true);
     }).catch(error => {

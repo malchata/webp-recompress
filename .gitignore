@@ -3,6 +3,5 @@ dist
 node_modules
 npm-debug.log
 Thumbs.db
-crap
 test/fixtures/*.webp
 !test/fixtures/decode-test.webp

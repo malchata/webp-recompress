@@ -4,8 +4,9 @@ import fs from "fs";
 import util from "util";
 
 // App modules
-import { defaults, jpegRegex, to, roundTo, getQualityInterval, clampQuality, getFinalQuality } from "./lib/utils.mjs";
+import { defaults, jpegRegex, pngRegex, to, roundTo, getQualityInterval, clampQuality, getFinalQuality } from "./lib/utils.mjs";
 import convert from "./lib/convert.mjs";
+import encodeWebp from "./lib/encode-webp.mjs";
 import identify from "./lib/identify.mjs";
 import cleanUp from "./lib/clean-up.mjs";
 import trial from "./lib/trial.mjs";
@@ -14,8 +15,44 @@ import trial from "./lib/trial.mjs";
 const statAsync = util.promisify(fs.stat);
 
 async function webpRecompress (input, threshold = defaults.threshold, thresholdMultiplier = defaults.thresholdMultiplier, start = defaults.start, quiet = defaults.quiet, verbose = defaults.verbose, prior = false, priorTrials) {
-  if (!jpegRegex.test(input)) {
-    return [false, "Input file must be a JPEG image."];
+  if (pngRegex.test(input)) {
+    let state, data;
+
+    // Get the size of input file
+    [state, data] = await to(statAsync(input));
+
+    if (!state) {
+      return [false, "Couldn't get the size of PNG input."];
+    }
+
+    const inputSize = data.size;
+    const outputWebp = path.resolve(process.cwd(), input.replace(pngRegex, ".webp"));
+
+    if (!quiet && !prior) {
+      console.log(`Input: ${input}`);
+    }
+
+    // Encode lossless WebP
+    [state, data] = await to(encodeWebp(input, outputWebp, 100));
+
+    if (!state) {
+      return [false, "Couldn't encode lossless WebP from PNG input."];
+    }
+
+    // Get the size of input file
+    [state, data] = await to(statAsync(outputWebp));
+
+    const outputSize = data.size;
+
+    if (!state) {
+      return [false, "Couldn't get the size of PNG input."];
+    }
+
+    return [true, `Encoded lossless WebP from PNG input: ${roundTo((inputSize) / 1024, 2)} KB -> ${roundTo((outputSize) / 1024, 2)} KB`];
+  }
+
+  if (!jpegRegex.test(input) && !pngRegex.test(input)) {
+    return [false, "Input must be a JPEG or PNG image."];
   }
 
   // Ensure the quality is within a reasonable range
@@ -28,7 +65,7 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
     return [false, "Threshold must be between 0 and 1."];
   }
 
-  let state, data, inputSize, size, score;
+  let state, data, size, score;
   let quality = +start;
   let trials = priorTrials || {};
 
@@ -36,14 +73,14 @@ async function webpRecompress (input, threshold = defaults.threshold, thresholdM
   [state, data] = await to(statAsync(input));
 
   if (!state) {
-    return [false, "Couldn't get the size of the input file."];
+    return [false, "Couldn't get the size of JPEG input."];
   }
 
   if (!quiet && !prior) {
     console.log(`Input: ${input}`);
   }
 
-  inputSize = data.size;
+  const inputSize = data.size;
 
   const files = {
     refPng: path.resolve(process.cwd(), input.replace(jpegRegex, ".png")),

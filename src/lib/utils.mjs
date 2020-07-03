@@ -8,6 +8,8 @@ export const defaults = {
 
 export const jpegRegex = /\.jpe?g$/i;
 
+export const pngRegex = /\.png$/i;
+
 export const webpRegex = /\.webp$/i;
 
 export const to = promise => promise.then(data => [true, data]).catch(error => [false, error]);

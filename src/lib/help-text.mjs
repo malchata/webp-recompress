@@ -9,8 +9,10 @@ Takes an input JPEG and tries to generate the best possible lossy WebP that is
 both smaller and looks as visually similar to its source as possible.
 
 Arguments:
-  -i [file] .... Input image file. Must be a JPEG file. Passing any other file
-                 type will throw an error. This is the only required argument.
+  -i [file] .... Input image file. Must be a JPEG or PNG file. This is the only
+                 JPEG inputs will be processed according to the purpose stated
+                 above. If a PNG is passed in, webp-recompress will convert it
+                 to lossless WebP with the most aggressive compression applied.
   -t N ......... Target SSIMULACRA threshold for the WebP file to meet. Lower
                  values mean resulting WebPs will resemble their inputs more,
                  but will also be larger. SSIMULACRA states that values above
